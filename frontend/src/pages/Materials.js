@@ -194,7 +194,7 @@ function Materials() {
                 {item.type === "PDF" && item.fileUrl ? (
                   <button
                     className="primary-btn"
-                    onClick={() => setSelectedPdf(`http://localhost:5000${item.fileUrl}`)}
+                    onClick={() => setSelectedPdf(`https://academic-study-scheduler.onrender.com${item.fileUrl}`)}
                   >
                     Open PDF
                   </button>

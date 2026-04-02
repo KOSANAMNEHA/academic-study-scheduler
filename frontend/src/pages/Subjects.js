@@ -8,7 +8,7 @@ function Subjects() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/subjects");
+      const res = await axios.get("https://academic-study-scheduler.onrender.com/api/subjects");
       setSubjects(res.data);
     } catch (err) {
       console.log("Error fetching subjects");
@@ -23,7 +23,7 @@ function Subjects() {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:5000/api/subjects", {
+      await axios.post("https://academic-study-scheduler.onrender.com/api/subjects", {
         name,
         hours
       });
