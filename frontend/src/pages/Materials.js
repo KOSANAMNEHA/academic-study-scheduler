@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import API from "../services/api";
 
 function Materials() {
   const [materials, setMaterials] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [selectedPdf, setSelectedPdf] = useState("");
+  const [selectedFileUrl, setSelectedFileUrl] = useState("");
+  const [selectedFileType, setSelectedFileType] = useState("");
+
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     subject: "",
@@ -29,12 +32,47 @@ function Materials() {
     }
   };
 
+  const isFileType =
+    formData.type === "PDF" ||
+    formData.type === "Video" ||
+    formData.type === "Document";
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === "type") {
+      setFormData({
+        ...formData,
+        type: value,
+        content: ""
+      });
+      setFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      subject: "",
+      type: "PDF",
+      title: "",
+      content: ""
+    });
+    setFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -45,10 +83,19 @@ function Materials() {
       data.append("subject", formData.subject);
       data.append("type", formData.type);
       data.append("title", formData.title);
-      data.append("content", formData.content);
 
-      if (file) {
+      if (isFileType) {
+        if (!file) {
+          alert(`Please upload a ${formData.type.toLowerCase()} file`);
+          return;
+        }
         data.append("file", file);
+      } else {
+        if (!formData.content.trim()) {
+          alert(`Please enter ${formData.type === "Link" ? "a link" : "notes"}`);
+          return;
+        }
+        data.append("content", formData.content);
       }
 
       await API.post("/materials", data, {
@@ -57,17 +104,12 @@ function Materials() {
         }
       });
 
-      setFormData({
-        subject: "",
-        type: "PDF",
-        title: "",
-        content: ""
-      });
-      setFile(null);
+      resetForm();
       setShowForm(false);
       fetchMaterials();
     } catch (err) {
       console.log("SAVE MATERIAL ERROR:", err.response?.data || err.message);
+      alert("Failed to save material");
     }
   };
 
@@ -76,8 +118,13 @@ function Materials() {
       await API.delete(`/materials/${id}`);
       fetchMaterials();
     } catch (err) {
-      console.log("Error deleting material");
+      console.log("Error deleting material", err);
     }
+  };
+
+  const openFileViewer = (url, type) => {
+    setSelectedFileUrl(`http://localhost:5000${url}`);
+    setSelectedFileType(type);
   };
 
   return (
@@ -88,7 +135,15 @@ function Materials() {
           <p>Add notes, PDFs, videos, and links for your subjects</p>
         </div>
 
-        <button className="primary-btn" onClick={() => setShowForm(!showForm)}>
+        <button
+          className="primary-btn"
+          onClick={() => {
+            setShowForm(!showForm);
+            if (showForm) {
+              resetForm();
+            }
+          }}
+        >
           <Plus size={18} />
           Add Material
         </button>
@@ -131,22 +186,37 @@ function Materials() {
               required
             />
 
-            {formData.type === "PDF" ? (
+            {isFileType ? (
               <>
-                <label>Upload PDF</label>
+                <label>
+                  Upload {formData.type}
+                </label>
                 <input
+                  ref={fileInputRef}
                   type="file"
-                  accept="application/pdf"
+                  accept={
+                    formData.type === "PDF"
+                      ? ".pdf,application/pdf"
+                      : formData.type === "Video"
+                      ? "video/*"
+                      : ".doc,.docx,.ppt,.pptx,.txt,.pdf"
+                  }
                   onChange={handleFileChange}
                   required
                 />
               </>
             ) : (
               <>
-                <label>Content / Link / Notes</label>
+                <label>
+                  {formData.type === "Link" ? "Paste Link" : "Write Notes"}
+                </label>
                 <textarea
                   name="content"
-                  placeholder="Paste link or write notes"
+                  placeholder={
+                    formData.type === "Link"
+                      ? "Paste link here"
+                      : "Write notes here"
+                  }
                   value={formData.content}
                   onChange={handleChange}
                   required
@@ -195,18 +265,36 @@ function Materials() {
                   <button
                     type="button"
                     className="primary-btn"
-                    onClick={() => setSelectedPdf(`http://localhost:5000${item.fileUrl}`)}
+                    onClick={() => openFileViewer(item.fileUrl, "PDF")}
                   >
                     Open PDF
                   </button>
-                ) : item.type === "Link" || item.type === "Video" ? (
+                ) : item.type === "Video" && item.fileUrl ? (
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => openFileViewer(item.fileUrl, "Video")}
+                  >
+                    Open Video
+                  </button>
+                ) : item.type === "Document" && item.fileUrl ? (
+                  <a
+                    href={`http://localhost:5000${item.fileUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="primary-btn"
+                    style={{ textDecoration: "none", display: "inline-block" }}
+                  >
+                    Open Document
+                  </a>
+                ) : item.type === "Link" ? (
                   <a
                     href={item.content}
                     target="_blank"
                     rel="noreferrer"
                     className="material-link"
                   >
-                    Open Material
+                    Open Link
                   </a>
                 ) : (
                   <p className="material-content">{item.content}</p>
@@ -217,21 +305,36 @@ function Materials() {
         )}
       </div>
 
-      {selectedPdf && (
+      {selectedFileUrl && (
         <div className="modal-overlay">
           <div className="pdf-viewer-modal">
             <div className="modal-header">
-              <h2>PDF Viewer</h2>
-              <button className="close-btn" onClick={() => setSelectedPdf("")}>
+              <h2>
+                {selectedFileType === "Video" ? "Video Viewer" : "PDF Viewer"}
+              </h2>
+              <button
+                className="close-btn"
+                onClick={() => {
+                  setSelectedFileUrl("");
+                  setSelectedFileType("");
+                }}
+              >
                 <X size={22} />
               </button>
             </div>
 
-            <iframe
-              src={selectedPdf}
-              title="PDF Viewer"
-              className="pdf-frame"
-            ></iframe>
+            {selectedFileType === "Video" ? (
+              <video controls className="pdf-frame" style={{ background: "#000" }}>
+                <source src={selectedFileUrl} />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <iframe
+                src={selectedFileUrl}
+                title="PDF Viewer"
+                className="pdf-frame"
+              ></iframe>
+            )}
           </div>
         </div>
       )}

@@ -11,19 +11,14 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"));
+    const safeName = file.originalname.replace(/\s+/g, "_");
+    cb(null, Date.now() + "-" + safeName);
   }
 });
 
 const upload = multer({
   storage,
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype === "application/pdf") {
-      cb(null, true);
-    } else {
-      cb(new Error("Only PDF files are allowed"), false);
-    }
-  }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
 // Add material
@@ -32,15 +27,24 @@ router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
     const { subject, type, title, content } = req.body;
 
     if (!subject || !type || !title) {
-      return res.status(400).json({ msg: "Subject, type, and title are required" });
+      return res.status(400).json({
+        msg: "Subject, type, and title are required"
+      });
     }
 
-    if (type === "PDF" && !req.file) {
-      return res.status(400).json({ msg: "PDF file is required" });
+    const fileTypes = ["PDF", "Video", "Document"];
+    const textTypes = ["Link", "Notes"];
+
+    if (fileTypes.includes(type) && !req.file) {
+      return res.status(400).json({
+        msg: `${type} file is required`
+      });
     }
 
-    if (type !== "PDF" && !content) {
-      return res.status(400).json({ msg: "Content is required" });
+    if (textTypes.includes(type) && !content) {
+      return res.status(400).json({
+        msg: "Content is required"
+      });
     }
 
     const newMaterial = new Material({
@@ -78,7 +82,15 @@ router.get("/", authMiddleware, async (req, res) => {
 // Delete material
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
-    await Material.findOneAndDelete({ _id: req.params.id, userId: req.user });
+    const deletedMaterial = await Material.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user
+    });
+
+    if (!deletedMaterial) {
+      return res.status(404).json({ msg: "Material not found" });
+    }
+
     res.json({ msg: "Material deleted successfully" });
   } catch (err) {
     console.log("MATERIAL DELETE ERROR:", err);
