@@ -25,7 +25,7 @@ function Materials() {
       const res = await API.get("/materials");
       setMaterials(res.data);
     } catch (err) {
-      console.log("Error fetching materials");
+      console.log("Error fetching materials", err);
     }
   };
 
@@ -67,7 +67,7 @@ function Materials() {
       setShowForm(false);
       fetchMaterials();
     } catch (err) {
-      console.log("Error adding material");
+      console.log("SAVE MATERIAL ERROR:", err.response?.data || err.message);
     }
   };
 
@@ -193,8 +193,9 @@ function Materials() {
 
                 {item.type === "PDF" && item.fileUrl ? (
                   <button
+                    type="button"
                     className="primary-btn"
-                    onClick={() => setSelectedPdf(`https://academic-study-scheduler.onrender.com${item.fileUrl}`)}
+                    onClick={() => setSelectedPdf(`http://localhost:5000${item.fileUrl}`)}
                   >
                     Open PDF
                   </button>

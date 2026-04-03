@@ -1,26 +1,18 @@
 const express = require("express");
-const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 const User = require("../models/User");
 
+const router = express.Router();
 
-// REGISTER USER
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
-
-    console.log("Register request:", req.body);
-
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ msg: "Please fill all fields" });
-    }
+    const userExists = await User.findOne({ email });
 
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser) {
+    if (userExists) {
       return res.status(400).json({ msg: "User already exists" });
     }
 
@@ -34,55 +26,46 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
-    res.status(201).json({ msg: "User registered successfully" });
+    res.json({ msg: "User registered successfully" });
 
-  } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({ msg: "Server error" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server error");
   }
 });
 
-
-// LOGIN USER
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
-
-    console.log("Login request:", req.body);
-
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(400).json({ msg: "Invalid email or password" });
+      return res.status(400).json({ msg: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid email or password" });
+      return res.status(400).json({ msg: "Invalid credentials" });
     }
 
     const token = jwt.sign(
-      { id: user._id },
+      { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
     res.json({
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email
-      }
+      name: user.name
     });
 
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ msg: "Server error" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Server error");
   }
 });
-
 
 module.exports = router;

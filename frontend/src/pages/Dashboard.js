@@ -12,6 +12,19 @@ function Dashboard() {
     sessions: 0
   });
 
+  const quotes = [
+    { text: "Keep going, your hard work will pay off.", author: "Unknown" },
+    { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
+    { text: "Push yourself, because no one else will do it for you.", author: "Unknown" },
+    { text: "Dream big and dare to fail.", author: "Norman Vaughan" },
+    { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
+    { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+    { text: "Great things never come from comfort zones.", author: "Unknown" },
+    { text: "Small progress is still progress.", author: "Unknown" },
+    { text: "Stay focused and never give up.", author: "Unknown" },
+    { text: "Your future is created by what you do today.", author: "Unknown" }
+  ];
+
   const [motivationText, setMotivationText] = useState("");
   const [motivationAuthor, setMotivationAuthor] = useState("");
 
@@ -19,13 +32,9 @@ function Dashboard() {
     fetchTasks();
     fetchDashboardStats();
 
-    const savedText = localStorage.getItem("motivationText");
-    const savedAuthor = localStorage.getItem("motivationAuthor");
-
-    if (savedText) {
-      setMotivationText(savedText);
-      setMotivationAuthor(savedAuthor || "Unknown");
-    }
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    setMotivationText(randomQuote.text);
+    setMotivationAuthor(randomQuote.author);
   }, []);
 
   const fetchTasks = async () => {
@@ -145,8 +154,8 @@ function Dashboard() {
 
         <div className="panel motivation-panel">
           <h3>Daily Motivation</h3>
-          <h2>"{motivationText || "Keep going, your hard work will pay off."}"</h2>
-          <p>— {motivationAuthor || "Unknown"}</p>
+          <h2>"{motivationText}"</h2>
+          <p>— {motivationAuthor}</p>
         </div>
       </div>
     </div>

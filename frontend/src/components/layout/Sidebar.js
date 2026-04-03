@@ -7,20 +7,20 @@ import {
   BarChart3,
   GraduationCap,
   LogOut,
-  BookOpen
+  FolderOpen
 } from "lucide-react";
 
 function Sidebar() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("userName");
-  localStorage.removeItem("loginDate");
-  localStorage.removeItem("motivationText");
-  localStorage.removeItem("motivationAuthor");
-  navigate("/login");
-};
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("loginDate");
+    localStorage.removeItem("motivationText");
+    localStorage.removeItem("motivationAuthor");
+    navigate("/login");
+  };
 
   return (
     <div className="sidebar">
@@ -58,6 +58,16 @@ function Sidebar() {
           </NavLink>
 
           <NavLink
+            to="/materials"
+            className={({ isActive }) =>
+              isActive ? "menu-link active" : "menu-link"
+            }
+          >
+            <FolderOpen size={20} />
+            <span>Materials</span>
+          </NavLink>
+
+          <NavLink
             to="/pomodoro"
             className={({ isActive }) =>
               isActive ? "menu-link active" : "menu-link"
@@ -76,15 +86,6 @@ function Sidebar() {
             <BarChart3 size={20} />
             <span>Progress Tracker</span>
           </NavLink>
-          <NavLink
-  to="/materials"
-  className={({ isActive }) =>
-    isActive ? "menu-link active" : "menu-link"
-  }
->
-  <BookOpen size={20} />
-  <span>Materials</span>
-</NavLink>
         </div>
       </div>
 

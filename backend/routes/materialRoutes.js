@@ -1,16 +1,17 @@
 const express = require("express");
-const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const Material = require("../models/Material");
 const authMiddleware = require("../middleware/authMiddleware");
+
+const router = express.Router();
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"));
   }
 });
 
@@ -29,6 +30,18 @@ const upload = multer({
 router.post("/", authMiddleware, upload.single("file"), async (req, res) => {
   try {
     const { subject, type, title, content } = req.body;
+
+    if (!subject || !type || !title) {
+      return res.status(400).json({ msg: "Subject, type, and title are required" });
+    }
+
+    if (type === "PDF" && !req.file) {
+      return res.status(400).json({ msg: "PDF file is required" });
+    }
+
+    if (type !== "PDF" && !content) {
+      return res.status(400).json({ msg: "Content is required" });
+    }
 
     const newMaterial = new Material({
       userId: req.user,

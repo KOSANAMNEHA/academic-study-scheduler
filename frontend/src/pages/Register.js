@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { GraduationCap } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 function Register() {
@@ -13,40 +12,57 @@ function Register() {
   });
 
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setError("");
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setSuccess("");
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
 
     try {
-      await API.post("/auth/register", formData);
-      navigate("/login");
+      const res = await API.post("/auth/register", {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+
+      setSuccess(res.data.msg || "User registered successfully");
+
+      setFormData({
+        name: "",
+        email: "",
+        password: ""
+      });
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
     } catch (err) {
-      setError("Registration failed. Try another email.");
+      console.log("REGISTER ERROR:", err);
+      setError(err.response?.data?.msg || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          <div className="logo-icon">
-            <GraduationCap size={24} />
-          </div>
-          <div>
-            <h2>StudyFlow</h2>
-            <p>Academic Study Scheduler</p>
-          </div>
-        </div>
-
         <h1>Create Account</h1>
-        <p className="auth-subtext">Start planning your studies smartly.</p>
 
         {error && <p className="error-text">{error}</p>}
+        {success && <p style={{ color: "green", marginBottom: "12px" }}>{success}</p>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <label>Name</label>
@@ -79,8 +95,8 @@ function Register() {
             required
           />
 
-          <button type="submit" className="primary-btn full-btn">
-            Register
+          <button type="submit" className="primary-btn full-btn" disabled={loading}>
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
 
